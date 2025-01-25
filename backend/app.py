@@ -34,6 +34,11 @@ def get_uuid():
 class User(db.Model, UserMixin):
     id = db.Column(db.String(11), primary_key=True, unique=True, default=get_uuid)
     email= db.Column(db.String(150), unique=True)
+    phone = db.Column(db.String(20, nullable=True))
+    location = db.Column(db.String(200), nullable=True)
+    school = db.Column(db.String(200), nullable=True)
+    year = db.Column(db.String(10, nullable=True))
+    experience = db.Column(db.Text, nullable=True)
     password = db.Column(db.Text, nullable=False)
     user_type = db.Column(db.String(150), default='student')
 
@@ -98,9 +103,52 @@ def signup():
 def logout():
     logout_user
 
+@app.route('/api/user/<user_id>/phone', methods=['GET'])
+@login_required
+def get_phone(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"phone": user.phone or "Not Provided"})
 
-    
+@app.route('/api/user/<user_id>/email', methods=['GET'])
+@login_required
+def get_email(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"email": user.email})
 
+@app.route('api/user/<user_id>/location')
+@login_required
+def get_location(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"Location": user.location})
 
+@app.route('api/user/<user_id>/school')
+@login_required
+def get_school(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"school": user.school or "Not Provided"})
+
+@app.route('api/user/<user_id>/year')
+@login_required
+def get_year(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"Year": user.year or "Not Provided"})
+
+@app.route
+@login_required
+def get_experience(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"Experience": user.experience or "Not Provided"})
 
 
