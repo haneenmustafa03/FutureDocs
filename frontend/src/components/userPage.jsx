@@ -3,7 +3,9 @@ import "../styles/userPage.css"
 export default function UserPage() {
     return(
         <div className='userBox'>
-
+            <div className='editButton'>
+                <img src="editIcon.png"/>
+            </div>
             <div className='picNameContainer'>
                 <div className='profilePic'></div>
                 <div className='name'>
@@ -21,5 +23,5 @@ export default function UserPage() {
             </div>
         </div>
     )
-
+    
 }
