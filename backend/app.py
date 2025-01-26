@@ -6,7 +6,9 @@ from datetime import datetime
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 from uuid import uuid4
+
 
 app = Flask(__name__)
 
@@ -14,21 +16,25 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-bcrypt = Bcrypt(app)
-CORS(app, supports_credentials=True)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(user_id)
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+migrate = Migrate(app, db)
+CORS(app, supports_credentials=True)
+login_manager = LoginManager()
+login_manager.login_view = 'login'
+login_manager.init_app(app)
 
 def get_uuid():
     return uuid4().hex
 
+@login_manager.user_loader
+
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 class User(db.Model, UserMixin):
+<<<<<<< HEAD
     id = db.Column(db.String(11), primary_key=True, unique=True, default=get_uuid)
     email= db.Column(db.String(150), unique=True)
     phone = db.Column(db.String(20, nullable=True))
@@ -36,8 +42,13 @@ class User(db.Model, UserMixin):
     school = db.Column(db.String(200), nullable=True)
     year = db.Column(db.String(10, nullable=True))
     experience = db.Column(db.Text, nullable=True)
+=======
+    __tablename__ = "users"
+    id = db.Column(db.String(11), primary_key=True, unique=True, default=get_uuid)
+    email = db.Column(db.String(150), unique=True)
+>>>>>>> c1999dfe3fcd3028367d2e7285b0092b429b2ac2
     password = db.Column(db.Text, nullable=False)
-    user_type = db.Column(db.String(150), default='student')
+    
 
     def __repr__(self):
         return f"<User {self.email}>"
@@ -51,13 +62,14 @@ class Opportunity(db.Model):
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(120), nullable=False)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
-    professional_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)  
+    professional_id = db.Column(db.String(11), db.ForeignKey('users.id'), nullable=False)
 
     professional = db.relationship('User', backref='posted_opportunities', lazy=True)
 
     def __repr__(self):
         return f"<Opportunity {self.title}, posted by {self.professional_id}>"
-    
+
+
 
 class Application(db.Model):
     __tablename__ = 'applications'
@@ -72,7 +84,57 @@ class Application(db.Model):
 
     def __repr__(self):
         return f"<Application by User {self.student_id} for Opportunity {self.opportunity_id} with status {self.status}>"
+
+with app.app_context():
+    db.create_all()
+
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.json["email"]
+    password = request.json["password"]
+
     
+    user = User.query.filter_by(email=email).first()
+
+    if user is None:
+        return jsonify({"error": "Unauthorized Access"}), 401
+
+    
+    if not bcrypt.check_password_hash(user.password, password):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    
+    login_user(user)
+    session["user_id"] = user.id
+
+    return jsonify({
+        "id": user.id,
+        "email": user.email
+    })
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    email = request.json["email"]
+    password = request.json["password"]
+
+    
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email already exists"}), 409
+
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(email=email, password=hashed_password)
+    
+    db.session.add(new_user)
+    db.session.commit()
+
+    
+    login_user(new_user)  
+    
+    return jsonify({
+        "id": new_user.id,
+        "email": new_user.email
+    })
 
 @app.route('/contact_info', methods=['POST'])
 @login_required
@@ -83,8 +145,7 @@ def contact():
       
     data = request.get_json()   
     
-    email = current_user.email
-    name = current_user.name  
+    
    
     opportunity = Opportunity(
         title=data.get('title'),
@@ -119,27 +180,6 @@ def search_application():
 
 
 
-
-@app.route('/login', methods=['POST'])
-def login():
-    if current_user.is_authenticated:
-        return jsonify({"message": "Already logged in."}), 400
-
-    email = request.json["email"]
-    password = request.json["password"]
-
-    user = User.query.filter_by(email=email).first()
-
-    if user is None or not bcrypt.check_password_hash(user.password, password):
-        return jsonify({"error": "Incorrect email or password"}), 401
-
-    login_user(user)
-
-    return jsonify({
-        "id": user.id, 
-        "email": user.email,
-    })
-
 @app.route('/api/search_opportunities', methods=['GET'])
 @login_required
 def search_opportunities():
@@ -165,32 +205,10 @@ def search_opportunities():
 
 
 
-
-@app.route('/signup', methods=['POST'])
-def signup():
-    if current_user.is_authenticated:
-        return jsonify({"message": "Already logged in."}), 400
-
-    email = request.json["email"]
-    password = request.json["password"]
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already exists"}), 400
-
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(email=email, password=hashed_password)
-
-    db.session.add(new_user)
-    db.session.commit()
-
-    login_user(new_user)
-    return jsonify({
-        "id": new_user.id, 
-        "email": new_user.email,
-    })
-
-@app.route('/logout', methods=['GET'])
+@app.route('/logout')
+@login_required
 def logout():
+<<<<<<< HEAD
     logout_user
 
 @app.route('/api/user/<user_id>/phone', methods=['GET'])
@@ -240,7 +258,15 @@ def get_experience(user_id):
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify({"Experience": user.experience or "Not Provided"})
+=======
+    logout_user()
+    flash("You have successfully logged out.", "info")
+    return redirect(url_for('login'))
+>>>>>>> c1999dfe3fcd3028367d2e7285b0092b429b2ac2
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
 
