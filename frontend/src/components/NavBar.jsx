@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Link } from 'react-router-dom'
+import { Link } from "react-router-dom";
+import "./NavBar.css";
 
-import "./NavBar.css"
+import { Date } from "./ClockTime/Date"
+import { Clock } from "./ClockTime/Clock"
 
 function NavBar(){
 
-
+  
 
   return(
     <>
@@ -23,19 +25,15 @@ function NavBar(){
           </button>
         </div>
         <div className="time">
-          11:06 AM
+         <Clock />
         </div>
         <div className="date">
-          26 Jan 2025
+          <Date />
         </div>
       </div>
-
-    </div>
-    
+      </div>
     </>
-  )
-
+  );
 }
 
-
-export default NavBar
+export default NavBar;

@@ -7,22 +7,23 @@ export default function JobBlock(props){
     <>
     <div className="jobContainer">
       <div className="Header">
-      <div>
-        Title
+      <div className="title">
+        {props.title}
       </div>
-      <div>
-        Date
+      <div className="date">
+        {props.date}
       </div>
-      </div>
-      <div>
-        Professional
-      </div>
-      <div>
-        Location
       </div>
 
-      <div>
-        Description
+      <div className="author">
+        {props.author}
+      </div>
+      <div className="location">
+        {props.location}
+      </div>
+
+      <div className="description">
+        {props.description}
       </div>
 
     </div>

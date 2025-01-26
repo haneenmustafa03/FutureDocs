@@ -3,11 +3,34 @@ import { Link } from 'react-router-dom'
 import NavBar from "../../components/navBar"
 import JobBlock from '../../components/JobBlock'
 import JobInfo from '../../components/JobInfo'
-
+import JobForm from '../../components/jobForm'
+import { useState, useEffect } from 'react'
 import "./Postings.css"
 
-function Postings(){
+import api from '../../api'
 
+function Postings(){  
+
+  const [jobPostings, setJobPostings] = useState([])
+
+  const postAmount = 16;
+
+  const [addPost, setAddPost] = useState(false)
+
+
+  const toggleAddForm = () => {
+    setAddPost(!addPost);
+  }
+
+  const getPosting = async() =>{
+    const msgList = await api.get("/api/jobs")
+    setJobPostings(msgList);
+  }
+
+  useEffect(()=>{
+    getPosting();
+
+  },[])
 
   return(
     <>
@@ -28,7 +51,7 @@ function Postings(){
         </div>
       </div>
       <div className="titleName">
-        Home
+        Postings
       </div>
     </div>
     <div className='PostingBox'>
@@ -37,6 +60,16 @@ function Postings(){
       </div>
       <div className="jobInformationContainer">
         <div className="jobPostContainer">
+          <div className='displayPosts'>
+            Displaying {postAmount} Results
+          </div>
+          <div>
+            <button onClick={toggleAddForm}>
+              Create new Post
+            </button>
+          </div>
+          <div className='jobPostScroll'>
+          {/*
           <div className="jobRow">
             <JobBlock />
             <JobBlock />
@@ -54,11 +87,31 @@ function Postings(){
             <JobBlock />
             <JobBlock />
             <JobBlock />
+          </div>
+          <div className="jobRow">
+            <JobBlock />
+            <JobBlock />
+            <JobBlock />
+            <JobBlock />
+          </div>*/}
+          
+          <div>
+            {jobPostings.map((job, index) =>{
+              <div key={job.id}>
+                <JobBlock />
+              </div>  
+            })}
+          </div>
+          
           </div>
         </div>
 
         <div className="jobDetailContainer">
-          <JobInfo id={1} />
+          {addPost ? (<>
+          <JobForm changeMe={toggleAddForm}/>
+          </>) : 
+          (<JobInfo id={1} />) }
+          
         </div>
         </div>
     </div>
